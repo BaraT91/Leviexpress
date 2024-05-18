@@ -14,6 +14,19 @@ const CityOptions = ({ cities }) => {
   );
 };
 
+const DataOptions = ({ dates }) => {
+  return (
+    <>
+      <option value="">Vyberte</option>
+      {dates.map((dates) => (
+        <option key={dates.dateBasic} value={dates.dateBasic}>
+          {dates.dateCs}
+        </option>
+      ))}
+    </>
+  );
+};
+
 export const JourneyPicker = ({ onJourneyChange }) => {
   const [fromCity, setFromCity] = useState('');
   const selectFromCity = (event) => {
@@ -32,6 +45,8 @@ export const JourneyPicker = ({ onJourneyChange }) => {
 
   const [cities, setCities] = useState([]);
 
+  const [dates, setDates] = useState([]);
+
   useEffect(() => {
     const fetchCities = async () => {
       const resp = await fetch(
@@ -43,13 +58,30 @@ export const JourneyPicker = ({ onJourneyChange }) => {
     fetchCities();
   }, []);
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    const fetchDates = async () => {
+      const resp = await fetch(
+        'https://apps.kodim.cz/daweb/leviexpress/api/dates',
+      );
+      const data = await resp.json();
+      setDates(data.results);
+    };
+    fetchDates();
+  }, []);
+
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log(
-      `Uživatel chce jízdenku z: ${fromCity} do: ${toCity} dne: ${date} `,
+    const resp = await fetch(
+      `https://apps.kodim.cz/daweb/leviexpress/api/journey?fromCity=${fromCity}&toCity=${toCity}&date=${date}`,
     );
+    const data = await resp.json();
+    onJourneyChange(data.results);
   };
+
   console.log(cities);
+
+  const isButtonDisabled = !fromCity || !toCity || !date;
   return (
     <div className="journey-picker container">
       <h2 className="journey-picker__head">Kam chcete jet?</h2>
@@ -70,11 +102,16 @@ export const JourneyPicker = ({ onJourneyChange }) => {
           <label>
             <div className="journey-picker__label">Datum:</div>
             <select onChange={selectDate} value={date}>
-              <CityOptions cities={cities} />
+              <DataOptions dates={dates} />
             </select>
           </label>
           <div className="journey-picker__controls">
-            <button className="btn" type="submit" onClick={handleSubmit}>
+            <button
+              className="btn"
+              type="submit"
+              onClick={handleSubmit}
+              disabled={isButtonDisabled}
+            >
               Vyhledat spoj
             </button>
           </div>
